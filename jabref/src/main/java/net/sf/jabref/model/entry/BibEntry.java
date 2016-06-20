@@ -42,6 +42,8 @@ import com.google.common.base.Strings;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import javax.swing.*;
+
 public class BibEntry {
     private static final Log LOGGER = LogFactory.getLog(BibEntry.class);
 
@@ -190,14 +192,14 @@ public class BibEntry {
      * <p>
      * The following aliases are considered (old bibtex <-> new biblatex) based
      * on the BibLatex documentation, chapter 2.2.5:
-     * address 		<-> location
-     * annote			<-> annotation
-     * archiveprefix 	<-> eprinttype
-     * journal 		<-> journaltitle
-     * key				<-> sortkey
-     * pdf 			<-> file
-     * primaryclass 	<-> eprintclass
-     * school 			<-> institution
+     * address      <-> location
+     * annote           <-> annotation
+     * archiveprefix    <-> eprinttype
+     * journal      <-> journaltitle
+     * key              <-> sortkey
+     * pdf          <-> file
+     * primaryclass     <-> eprintclass
+     * school           <-> institution
      * These work bidirectional.
      * <p>
      * Special attention is paid to dates: (see the BibLatex documentation,
@@ -317,6 +319,99 @@ public class BibEntry {
     }
 
     /**
+     * Trecho de codigo A1: responsavel por validar o campo ano.
+     */
+
+    public static boolean isNumeric(String str) {
+        for (char c : str.toCharArray()) {
+            if (!Character.isDigit(c)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    public static String verificaAno(String ano) {
+        Calendar cal = Calendar.getInstance();
+        int anoInicial = 1970;
+        int anoAtual = cal.get(Calendar.YEAR);
+        int valor = 0;
+        try {
+            valor = Integer.parseInt(ano);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "O caractere digitado no campo\nYear não é um número",
+                    "Erro - caractere inválido", 0);
+        }
+        String str = null;
+        boolean flag = true;
+        //checa se o ano eh valido
+        while (flag && ((valor < anoInicial) || (valor > anoAtual))) {
+            str = JOptionPane.showInputDialog(null, "Ocorreu ao tentar inserir Year.\nDigite novamente:\n", "Atenção",
+                    JOptionPane.WARNING_MESSAGE);
+            System.out.println(str);
+
+            if ((str == null) || str.equals("") || !(isNumeric(str))) {
+                flag = false;
+                valor = -1;
+            } else {
+                valor = Integer.parseInt(str);
+            }
+
+        }
+        if (!flag) {
+            valor = 2016;
+        }
+
+        ano = Integer.toString(valor);
+
+        return ano;
+    }
+
+    /**
+     * Fim de A1.
+     */
+
+
+    /**
+     * Trecho de codigo A2: responsavel por validar o campo bibexkey.
+     */
+
+    public String verificaBibtexkey(String bibtexkey, boolean flag) {
+        if (Character.isLetter(bibtexkey.charAt(0)) && (bibtexkey.length() > 1)) {
+            return bibtexkey;
+        }
+        JOptionPane.showMessageDialog(null,
+                "Ocorreu ao tentar inserir Bibtexkey. \nUma chave foi gerada automaticamente. \n");
+        if (flag) {
+            return "Art".concat(this.getId());
+        }
+        return "Book".concat(this.getId());
+    }
+
+    /**
+     * Fim de A2.
+     */
+
+    /**
+     * Trecho de codico C1. Referente às modificações escolhidas pelo grupo.
+     */
+    public String verificaLetraMinus(String campo, String nomeCampo) {
+        if (Character.isLetter(campo.charAt(0)) && Character.isLowerCase(campo.charAt(0))) {
+            int flag = JOptionPane.showConfirmDialog(null, "É interessante que o campo " + nomeCampo
+                    + " comece com letra maiúscula.\nPodemos fazer isso para você ?\n", "Primeiro Caractere Minúsculo",
+                    0);
+            if (flag == JOptionPane.YES_OPTION) {
+                campo = campo.replaceFirst(Character.toString(campo.charAt(0)),
+                        Character.toString(Character.toUpperCase(campo.charAt(0))));
+            }
+        }
+        return campo;
+    }
+
+    /**
+     * Fim de C1.
+     */
+
+    /**
      * Set a field, and notify listeners about the change.
      *
      * @param name  The field to set.
@@ -336,6 +431,51 @@ public class BibEntry {
         if (BibEntry.ID_FIELD.equals(fieldName)) {
             throw new IllegalArgumentException("The field name '" + name + "' is reserved");
         }
+
+        //Verifica se o ano e o bibtexkey eh valido para entradas do tipo "Article" ou "Book"
+        if (type.equals("article") || type.equals("book")) {
+
+            if (name.equals("year")) {
+                System.out.println(value);
+                value = verificaAno(value);
+            }
+
+            if (type.equals("article")) {
+                if (name.equals("bibtexkey")) {
+                    value = verificaBibtexkey(value, true);
+                }
+            }
+
+            if (type.equals("book")) {
+                if (name.equals("bibtexkey")) {
+                    value = verificaBibtexkey(value, false);
+                }
+            }
+        }
+
+        //INICIO
+        // para todos os campos abaixo, caso tenha uma letra no 1a pos, ela sera colocada como maiusculo
+        if (type.equals("article") || type.equals("book")) {
+
+            if (name.equals("title")) {
+                value = verificaLetraMinus(value, "Title");
+            }
+            if (name.equals("publisher")) {
+                value = verificaLetraMinus(value, "Publisher");
+            }
+            if (name.equals("author")) {
+                value = verificaLetraMinus(value, "Author");
+            }
+            if (name.equals("editor")) {
+                value = verificaLetraMinus(value, "Editor");
+            }
+            if (name.equals("journal")) {
+                value = verificaLetraMinus(value, "Journal");
+            }
+            System.out.println(name + ' ' + value);
+        }
+
+        //FIM
 
         changed = true;
 
